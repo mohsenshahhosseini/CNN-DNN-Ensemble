@@ -23,7 +23,7 @@ import joblib
 warnings.filterwarnings('ignore')
 
 test_year = 2019
-scenario = '_final_fixedscaling'
+scenario = '_final'
 
 random_state = 1369
 pd.set_option('display.max_columns', 500)
@@ -31,7 +31,6 @@ np.random.seed(random_state)
 
 # loading yield file
 print('\n $$ Loading data files... \n')
-os.chdir("/Users/mohsen/Box/8. Fall 20/Ensemble Deep Learning/data/")
 Yield = pd.read_csv('yield_data.csv')
 Yield = Yield[['Year', 'State ANSI', 'County ANSI', 'State', 'County', 'Value']]
 Yield.columns = ['year', 'state', 'county', 'State', 'County', 'Yield']
@@ -79,20 +78,6 @@ Yield = pd.merge(Yield, progress, on=['year','state'], how='left')
 
 # loading soil file
 soil = pd.read_csv('soil_data.csv')
-
-# aggregating soil features to 3 levels
-# for v in range(1,11):
-#     soil['S_var'+str(v)+'_0:45'] = soil['S_var' + str(v) + '_depth1'] * 5/45 + \
-#                                    soil['S_var' + str(v) + '_depth2'] * 5/45 + \
-#                                    soil['S_var' + str(v) + '_depth3'] * 5/45 + \
-#                                    soil['S_var' + str(v) + '_depth4'] * 15/45 + \
-#                                    soil['S_var' + str(v) + '_depth5'] * 15/45
-#     soil['S_var'+str(v)+'_45:80'] = soil['S_var' + str(v) + '_depth6'] * 15/35 + \
-#                                     soil['S_var' + str(v) + '_depth7'] * 20/35
-#     soil['S_var'+str(v)+'_80:150'] = soil['S_var' + str(v) + '_depth8'] * 20/70 + \
-#                                      soil['S_var' + str(v) + '_depth9'] * 20/70 + \
-#                                      soil['S_var' + str(v) + '_depth10'] * 30/70
-# soil.drop(soil.loc[:,'S_var1_depth1':'S_var10_depth10'], axis=1, inplace=True)
 keys = pd.read_csv('soil_data_key.csv')
 soil = pd.concat([soil, keys[['State', 'County']]], axis=1)
 soil['State'] = soil['State'].str.upper()
@@ -103,13 +88,11 @@ data1 = pd.merge(Yield, soil, on=['State', 'County'])
 data1.drop(columns=['State','County'], inplace=True)
 
 # loading weather data
-# os.chdir('/Users/mohsen/Box/8. Fall 20/Ensemble Deep Learning/weather')
 weather = pd.read_parquet('main_weather_final.parquet')
 weather = weather[(weather.year >= 1980)&(weather.year <= test_year)]
 weather.state = weather.state.astype('int')
 weather.county = weather.county.astype('int')
 weather.year = weather.year.astype('int')
-# weather.drop(weather.loc[:,'gddf_1':'gddf_52'], axis=1, inplace=True)
 
 # Removing weather data after harvesting and before next planting date
 idx = list(['state', 'county', 'year']) + \
@@ -161,10 +144,8 @@ data = data[data.Yield>10]
 data = data.reset_index(drop=True)
 data = data.rename(columns = {'year':'Year'})
 
-
 for s in data.state.unique():
     print('State ' + Yield.State[Yield.state==s].unique()[0] + ' Average: ', data.Yield[(data.state==s) & (data.Year==2019)].mean())
-
 
 # train and test splits
 train = data[data.Year < test_year].reset_index(drop=True)
